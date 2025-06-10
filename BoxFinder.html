@@ -390,18 +390,19 @@ const boxes = [
     }
 
     // ───────────────────────────────────────────────────────────────────────────
-    // Handle file upload (CSV or Excel)
+    // Updated file upload handler (Excel branch)
     document.getElementById('fileInput').addEventListener('change', event => {
       const file = event.target.files[0];
       if (!file) return;
       const name = file.name.toLowerCase();
+      const fileInput = document.getElementById('fileInput');
+
       if (name.endsWith('.csv')) {
         const reader = new FileReader();
         reader.onload = e => {
           const parsed = parseCSVText(e.target.result);
           if (parsed.length === 0) {
             document.getElementById('resultSection').innerHTML = '<p id="noItems">No valid items found in CSV file.</p>';
-            // Clear any previous export button
             document.getElementById('exportWrapper').innerHTML = '';
             return;
           }
@@ -409,6 +410,7 @@ const boxes = [
           fileInput.value = '';
         };
         reader.readAsText(file);
+
       } else if (name.endsWith('.xls') || name.endsWith('.xlsx')) {
         const reader = new FileReader();
         reader.onload = e => {
@@ -416,22 +418,24 @@ const boxes = [
           const workbook = XLSX.read(data, { type: 'array' });
           const firstSheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[firstSheetName];
-          const json = XLSX.utils.sheet_to_json(worksheet, { header: ['sku','length','width','height'], range: 0 });
-          json.shift(); // remove header row
+          const json = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
           const parsed = [];
           json.forEach(row => {
-            const skuVal = row.sku;
-            const lengthNum = parseFloat(row.length);
-            const widthNum = parseFloat(row.width);
-            const heightNum = parseFloat(row.height);
+            const skuVal = row['sku'] || row['SKU'];
+            const lengthNum = parseFloat(row['length']);
+            const widthNum = parseFloat(row['width']);
+            const heightNum = parseFloat(row['height']);
             if (!skuVal || isNaN(lengthNum) || isNaN(widthNum) || isNaN(heightNum)) return;
             parsed.push({
+              ...row,
               sku: skuVal.toString(),
               length: lengthNum,
               width: widthNum,
               height: heightNum
             });
           });
+
           if (parsed.length === 0) {
             document.getElementById('resultSection').innerHTML = '<p id="noItems">No valid items found in Excel file.</p>';
             document.getElementById('exportWrapper').innerHTML = '';
@@ -541,31 +545,14 @@ const boxes = [
     }
 
     // ───────────────────────────────────────────────────────────────────────────
-    // Export rows array to Excel using SheetJS
+    // Updated export function
     function exportToExcel(data) {
-      const ws_data = [
-        [
-          'SKU',
-          'Item Dimensions (L×W×H)',
-          'Closest Box',
-          'Box Dimensions (L×W×H)',
-          'Box Volume',
-          'Next Closest Box',
-          'Next Box Dimensions (L×W×H)',
-          'Next Box Volume'
-        ]
-      ];
-      data.forEach(r => {
-        ws_data.push([
-          r.sku,
-          r.itemDims,
-          r.boxName,
-          r.boxDims,
-          r.boxVol,
-          r.nextName,
-          r.nextDims,
-          r.nextVol
-        ]);
+      const ws_data = [];
+      const allKeys = Array.from(new Set(data.flatMap(row => Object.keys(row))));
+      ws_data.push(allKeys);
+      data.forEach(row => {
+        const rowData = allKeys.map(key => row[key] ?? '');
+        ws_data.push(rowData);
       });
 
       const wb = XLSX.utils.book_new();

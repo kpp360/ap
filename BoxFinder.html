@@ -328,21 +328,25 @@ const boxes = [
     }
 
     // 3D Fit Check (“fitsInBox”)
-    function fitsInBox(itemDims, boxDims) {
-      const [Li, Wi, Hi] = itemDims;
-      const [Lb, Wb, Hb] = boxDims;
-      const orientations = [
-        { vert: Li, b1: Wi, b2: Hi, bh: Hb, bl: Lb, bw: Wb },
-        { vert: Wi, b1: Li, b2: Hi, bh: Hb, bl: Lb, bw: Wb },
-        { vert: Hi, b1: Li, b2: Wi, bh: Hb, bl: Lb, bw: Wb }
-      ];
-      for (const o of orientations) {
-        if (o.vert > o.bh) continue;
-        if (canFit2D(o.b1, o.b2, o.bl, o.bw)) {
-          return true;
-        }
-      }
-      return false;
+   function fitsInBox(itemDims, boxDims) {
+  const [Li, Wi, Hi] = itemDims;
+  const [Lb, Wb, Hb] = boxDims;
+  const orientations = [
+    { vert: Li, b1: Wi, b2: Hi, bh: Hb, bl: Lb, bw: Wb, label: 'L upright' },
+    { vert: Wi, b1: Li, b2: Hi, bh: Hb, bl: Lb, bw: Wb, label: 'W upright' },
+    { vert: Hi, b1: Li, b2: Wi, bh: Hb, bl: Lb, bw: Wb, label: 'H upright' }
+  ];
+
+  for (const o of orientations) {
+    if (o.vert > o.bh) continue;
+    if (canFit2D(o.b1, o.b2, o.bl, o.bw)) {
+      return {
+        fits: true,
+        explanation: `${o.label}: item height (${o.vert}) ≤ box height (${o.bh}) and base fits within ${o.bl}×${o.bw}`
+      };
+    }
+  }
+  return { fits: false, explanation: 'Does not fit in any orientation.' };
     }
 
     // ───────────────────────────────────────────────────────────────────────────
@@ -501,73 +505,69 @@ const boxes = [
 
     // ───────────────────────────────────────────────────────────────────────────
     // Compute closest and next-compatible box for each item and render results
-    function processItems(items) {
-      const resultDiv = document.getElementById('resultSection');
-      resultDiv.innerHTML = ''; // clear previous
+   function processItems(items) {
+  const resultDiv = document.getElementById('resultSection');
+  resultDiv.innerHTML = '';
 
-      // Build rows array with closest and next-compatible info
-      const rows = items.map(item => {
-        const dims = [item.length, item.width, item.height];
-        const compatible = boxes.filter(box => {
-          return fitsInBox(dims, [box.length, box.width, box.height]);
-        });
-        if (compatible.length === 0) {
-          return {
-            sku: item.sku,
-            itemDims: `${item.length}×${item.width}×${item.height}`,
-            boxName: 'NONE', boxDims: '–', boxVol: '–',
-            nextName: '–', nextDims: '–', nextVol: '–'
-          };
-        }
-        // sort by volume
-        compatible.sort((a, b) => {
-          const volA = a.length * a.width * a.height;
-          const volB = b.length * b.width * b.height;
-          return volA - volB;
-        });
-        const best = compatible[0];
-        const bestVol = best.length * best.width * best.height;
-        let nextName = '–', nextDims = '–', nextVol = '–';
-        if (compatible.length > 1) {
-          const next = compatible[1];
-          nextName = next.name;
-          nextDims = `${next.length}×${next.width}×${next.height}`;
-          nextVol = next.length * next.width * next.height;
-        }
-        return {
-          sku: item.sku,
-          itemDims: `${item.length}×${item.width}×${item.height}`,
-          boxName: best.name,
-          boxDims: `${best.length}×${best.width}×${best.height}`,
-          boxVol: bestVol,
-          nextName: nextName,
-          nextDims: nextDims,
-          nextVol: nextVol
-        };
-      });
+  const rows = items.map(item => {
+    const dims = [item.length, item.width, item.height];
+    const compatible = boxes
+      .map(box => {
+        const check = fitsInBox(dims, [box.length, box.width, box.height]);
+        return check.fits ? {
+          ...box,
+          volume: box.length * box.width * box.height,
+          explanation: check.explanation
+        } : null;
+      })
+      .filter(Boolean);
 
-      // Create result table
-      const table = document.createElement('table');
-      table.className = 'resultTable';
-      const thead = document.createElement('thead');
-      thead.innerHTML = `
+    if (compatible.length === 0) {
+      return {
+        sku: item.sku,
+        itemDims: `${item.length}×${item.width}×${item.height}`,
+        boxName: 'NONE', boxDims: '–', boxVol: '–',
+        nextName: '–', nextDims: '–', nextVol: '–',
+        explanation: 'No compatible box found.'
+      };
+    }
+
+    compatible.sort((a, b) => a.volume - b.volume);
+    const best = compatible[0];
+    const next = compatible[1];
+
+    return {
+      sku: item.sku,
+      itemDims: `${item.length}×${item.width}×${item.height}`,
+      boxName: best.name,
+      boxDims: `${best.length}×${best.width}×${best.height}`,
+      boxVol: best.volume,
+      nextName: next ? next.name : '–',
+      nextDims: next ? `${next.length}×${next.width}×${next.height}` : '–',
+      nextVol: next ? next.volume : '–',
+      explanation: best.explanation
+    };
+  });
+
+  const table = document.createElement('table');
+  table.className = 'resultTable';
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th>SKU</th>
+        <th>Item Dimensions (L×W×H)</th>
+        <th>Closest Box</th>
+        <th>Box Dimensions (L×W×H)</th>
+        <th>Box Volume</th>
+        <th>Next Closest Box</th>
+        <th>Next Box Dimensions (L×W×H)</th>
+        <th>Next Box Volume</th>
+        <th>Explanation</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows.map((r, i) => `
         <tr>
-          <th>SKU</th>
-          <th>Item Dimensions (L×W×H)</th>
-          <th>Closest Box</th>
-          <th>Box Dimensions (L×W×H)</th>
-          <th>Box Volume</th>
-          <th>Next Closest Box</th>
-          <th>Next Box Dimensions (L×W×H)</th>
-          <th>Next Box Volume</th>
-        </tr>
-      `;
-      table.appendChild(thead);
-
-      const tbody = document.createElement('tbody');
-      rows.forEach(r => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
           <td>${r.sku}</td>
           <td>${r.itemDims}</td>
           <td class="highlight">${r.boxName}</td>
@@ -576,36 +576,43 @@ const boxes = [
           <td>${r.nextName}</td>
           <td>${r.nextDims}</td>
           <td>${r.nextVol}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-      table.appendChild(tbody);
-      resultDiv.appendChild(table);
+          <td>
+            <button onclick="toggleExplanation('explanation-${i}')">Show</button>
+            <div id="explanation-${i}" style="display:none; margin-top:0.25rem; font-size:0.75rem; color:#555;">
+              ${r.explanation}
+            </div>
+          </td>
+        </tr>`).join('')}
+    </tbody>`;
 
-      // Place export button below file input
-      const exportWrapper = document.getElementById('exportWrapper');
-      exportWrapper.innerHTML = ''; // clear previous
-      const exportBtn = document.createElement('button');
-      exportBtn.textContent = 'Export Results to Excel';
-      exportBtn.addEventListener('click', () => exportToExcel(rows));
-      exportWrapper.appendChild(exportBtn);
+  resultDiv.appendChild(table);
+
+  const exportWrapper = document.getElementById('exportWrapper');
+  exportWrapper.innerHTML = '';
+  const exportBtn = document.createElement('button');
+  exportBtn.textContent = 'Export Results to Excel';
+  exportBtn.addEventListener('click', () => exportToExcel(rows));
+  exportWrapper.appendChild(exportBtn);
     }
 
     // ───────────────────────────────────────────────────────────────────────────
     // Updated export function
     function exportToExcel(data) {
-      const ws_data = [];
-      const allKeys = Array.from(new Set(data.flatMap(row => Object.keys(row))));
-      ws_data.push(allKeys);
-      data.forEach(row => {
-        const rowData = allKeys.map(key => row[key] ?? '');
-        ws_data.push(rowData);
-      });
+  const ws_data = [];
+  const allKeys = [
+    "sku", "itemDims", "boxName", "boxDims", "boxVol",
+    "nextName", "nextDims", "nextVol", "explanation"
+  ];
+  ws_data.push(allKeys);
+  data.forEach(row => {
+    const rowData = allKeys.map(key => row[key] ?? '');
+    ws_data.push(rowData);
+  });
 
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.aoa_to_sheet(ws_data);
-      XLSX.utils.book_append_sheet(wb, ws, 'Results');
-      XLSX.writeFile(wb, 'box_selector_results.xlsx');
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+  XLSX.utils.book_append_sheet(wb, ws, 'Results');
+  XLSX.writeFile(wb, 'box_selector_results.xlsx');
     }
  
 function renderFourBoxTablesAndMailers() {
@@ -645,6 +652,17 @@ function renderFourBoxTablesAndMailers() {
 
 renderFourBoxTablesAndMailers();
 
+function toggleExplanation(id) {
+  const el = document.getElementById(id);
+  const btn = el.previousElementSibling;
+  if (el.style.display === 'none') {
+    el.style.display = 'block';
+    btn.textContent = 'Hide';
+  } else {
+    el.style.display = 'none';
+    btn.textContent = 'Show';
+  }
+}
   </script>
 </body>
 </html>

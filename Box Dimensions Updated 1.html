@@ -1,0 +1,417 @@
+Please export the updated inventory and its dimensions on CA in a timely manner.
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Order ↔ Inventory Matcher + Quick Finder</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex; flex-direction: column; align-items: center;
+      padding: 20px;
+    }
+    h1, h2 { text-align: center; margin: 10px 0; }
+
+    /* Reference tables side-by-side */
+    .refs-flex {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 1000px;
+      margin-bottom: 30px;
+    }
+    /* Mailers Reference */
+    #mailersRefTable {
+      width: 30%;
+      min-width: 220px;
+      border-collapse: collapse;
+    }
+    /* Box Reference columns */
+    #boxRefTable1,
+    #boxRefTable2 {
+      width: 33%;
+      min-width: 240px;
+      font-size: 0.85rem;
+      border-collapse: collapse;
+    }
+    /* Shared table styles */
+    table, th, td {
+      border: 1px solid #666;
+    }
+    th {
+      background: #eee;
+    }
+    th, td {
+      text-align: center;
+      padding: 8px 12px;
+    }
+    /* Tighten box ref padding */
+    #boxRefTable1 th, #boxRefTable1 td,
+    #boxRefTable2 th, #boxRefTable2 td {
+      padding: 4px 6px;
+    }
+    /* Quick Finder result styling */
+    #finderResult td { font-weight: bold; }
+    /* Uploader and finder margin */
+    .quick-finder, .uploader {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    input[type="file"], input[type="number"] {
+      margin: 5px; padding: 6px; font-size: 1rem;
+    }
+    button {
+      padding: 6px 12px; font-size: 1rem; cursor: pointer; margin: 0 5px;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <img src="https://www.karparts360.com/var/images/logo/163.30/public/images/simplecms/logo_Company_logo_desktop_version_2.png" alt="Logo" class="logo">
+  </header>
+  <h1>📦 Order ↔ Inventory Matcher</h1>
+
+  <!-- ===== References side-by-side ===== -->
+  <div class="refs-flex">
+    <!-- Mailers Reference -->
+    <div>
+      <h2>📪 Mailers Reference</h2>
+      <table id="mailersRefTable">
+        <thead>
+          <tr><th>Mailer</th><th>L</th><th>W</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- Box Reference split into two columns -->
+    <div>
+      <h2>📋 Box Reference</h2>
+      <div style="display: flex; gap: 10px;">
+        <table id="boxRefTable1">
+          <thead>
+            <tr><th>Box</th><th>L</th><th>W</th><th>H</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <table id="boxRefTable2">
+          <thead>
+            <tr><th>Box</th><th>L</th><th>W</th><th>H</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <!-- ===== End References ===== -->
+
+  <!-- ===== Quick Box Finder ===== -->
+  <div class="quick-finder">
+    <h2>🔍 Quick Box Finder</h2>
+    <input type="number" id="qLen" placeholder="Length">
+    <input type="number" id="qWid" placeholder="Width">
+    <input type="number" id="qHei" placeholder="Height (0→mailer)">
+    <button onclick="findBox()">Find</button>
+  </div>
+  <table id="finderResult" style="display:none; margin-bottom:30px;">
+    <thead>
+      <tr><th>Matched</th><th>L</th><th>W</th><th>H</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td id="fCode"></td>
+        <td id="fL"></td>
+        <td id="fW"></td>
+        <td id="fH"></td>
+      </tr>
+    </tbody>
+  </table>
+  <!-- ===== End Quick Finder ===== -->
+
+  <!-- ===== File Uploader ===== -->
+  <div class="uploader">
+    <label>Order File:     <input type="file" id="orderFile" accept=".csv,.xlsx,.xls"></label>
+    <label>Inventory File: <input type="file" id="invFile"   accept=".csv,.xlsx,.xls"></label>
+    <button onclick="processFiles()">Process Files</button>
+    <button onclick="clearAll()">Clear</button>
+  </div>
+  <!-- ===== End Uploader ===== -->
+
+  <!-- ===== Matched Results ===== -->
+  <h2>✅ Matched Results</h2>
+  <table id="resultsTable">
+    <thead>
+      <tr>
+        <th>Order #</th><th>Item SKU</th>
+        <th>L</th><th>W</th><th>H</th>
+        <th>Matched</th><th>pL</th><th>pW</th><th>pH</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <!-- ===== End Results ===== -->
+
+  <!-- ===== Dependencies ===== -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script>
+    // ── 1) Data for mailers & boxes ─────────────────────────────────────────────────
+    const mailers = {
+      "A01":[13.5,8.5],  "A02":[13.5,9.5],
+      "A03":[15.0,10.5], "A04":[18.0,12.5],
+      "A05":[19.0,14.25]
+    };
+    const boxes = {
+      "B01":[10,8,6],  "B02":[12,12,8],  "B03":[12,12,8],
+      "B04":[14,10,8], "B05":[16,10,6], "B06":[16,12,8],
+      "B07":[16,12,12],"B08":[16,16,8], "B09":[18,6,6],
+      "B10":[18,14,10],"B11":[18,16,12],"B12":[20,8,8],
+      "B13":[20,10,10],"B14":[20,14,8], "B15":[20,16,14],
+      "B16":[20,20,12],"B17":[22,14,12],"B18":[24,6,6],
+      "B19":[24,12,12],"B20":[24,24,24],"B21":[26,12,12],
+      "B22":[30,6,6],  "B23":[30,14,14],"B24":[40,6,6]
+    };
+
+    // ── 2) Build Reference Tables on load ─────────────────────────────────────────
+    function buildReferences() {
+      // Mailers Reference
+      const mBody = document.querySelector("#mailersRefTable tbody");
+      Object.entries(mailers)
+        .sort((a,b)=>parseInt(a[0].slice(1)) - parseInt(b[0].slice(1)))
+        .forEach(([code,dims]) => {
+          mBody.innerHTML += `<tr>
+            <td>${code}</td><td>${dims[0]}</td><td>${dims[1]}</td>
+          </tr>`;
+        });
+
+      // Box Reference: split into two tables
+      const allBoxes = Object.entries(boxes)
+        .sort((a,b)=>parseInt(a[0].slice(1)) - parseInt(b[0].slice(1)));
+      const halfway = Math.ceil(allBoxes.length / 2);
+      const firstHalf  = allBoxes.slice(0, halfway);
+      const secondHalf = allBoxes.slice(halfway);
+
+      firstHalf.forEach(([code,d]) => {
+        document.querySelector("#boxRefTable1 tbody").innerHTML += `
+          <tr>
+            <td>${code}</td><td>${d[0]}</td><td>${d[1]}</td><td>${d[2]}</td>
+          </tr>`;
+      });
+      secondHalf.forEach(([code,d]) => {
+        document.querySelector("#boxRefTable2 tbody").innerHTML += `
+          <tr>
+            <td>${code}</td><td>${d[0]}</td><td>${d[1]}</td><td>${d[2]}</td>
+          </tr>`;
+      });
+    }
+
+    // ── 3) Quick Box Finder ───────────────────────────────────────────────────────
+    function findBox() {
+      const L = parseFloat(document.getElementById("qLen").value) || 0;
+      const W = parseFloat(document.getElementById("qWid").value) || 0;
+      const H = parseFloat(document.getElementById("qHei").value) || 0;
+      const match = matchOne({ L, W, H });
+      document.getElementById("fCode").innerText = match.code;
+      document.getElementById("fL").innerText    = match.L;
+      document.getElementById("fW").innerText    = match.W;
+      document.getElementById("fH").innerText    = match.H;
+      document.getElementById("finderResult").style.display = "table";
+    }
+
+    // ── 4) Order↔Inventory File Processing ────────────────────────────────────────
+    let orderData = null, invData = null;
+    function processFiles() {
+      orderData = invData = null;
+      const f1 = document.getElementById("orderFile").files[0],
+            f2 = document.getElementById("invFile").files[0];
+      if (!f1 || !f2) {
+        alert("Please pick BOTH files.");
+        return;
+      }
+      parseAny(f1, data => { orderData = data; tryMatch(); });
+      parseAny(f2, data => { invData   = data; tryMatch(); });
+    }
+
+    function tryMatch() {
+      if (!orderData || !invData) return;
+      // Build a lookup map of SKU→{L,W,H}
+      const invMap = {};
+      invData.forEach(r => {
+        const sku = r["Inventory Number"] || r["Item - SKU"] || r["Item SKU"] || "";
+        invMap[sku] = {
+          L: parseFloat(r["Length"]) || 0,
+          W: parseFloat(r["Width"])  || 0,
+          H: parseFloat(r["Height"]) || 0
+        };
+      });
+
+      // Join & match
+      const results = orderData.map(r => {
+        const orderNum = r["Order - Number"] || r["Order Number"] || r["Order"] || "";
+        const skuItem  = r["Item - SKU"]     || r["Item SKU"]      || "";
+        const dims     = invMap[skuItem] || { L:0, W:0, H:0 };
+        const m        = matchOne(dims);
+        return {
+          order: orderNum,
+          sku: skuItem,
+          L: dims.L,
+          W: dims.W,
+          H: dims.H,
+          code: m.code,
+          pL: m.L,
+          pW: m.W,
+          pH: m.H
+        };
+      })
+      .sort((a,b)=> a.code.localeCompare(b.code));
+
+      renderResults(results);
+    }
+
+    // CSV or XLSX parsing
+    function parseAny(file, callback) {
+      const ext = file.name.split(".").pop().toLowerCase();
+      if (ext === "csv") {
+        Papa.parse(file, {
+          header: true,
+          dynamicTyping: true,
+          complete: ({ data }) => callback(data.filter(r => Object.keys(r).length))
+        });
+      } else {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          callback(XLSX.utils.sheet_to_json(ws, { defval: "" }));
+        };
+        reader.readAsArrayBuffer(file);
+      }
+    }
+
+    // ── 5) matchOne(…) uses Long/Mid/Short + Volume/Diagonal ────────────────────
+    function matchOne({ L, W, H }) {
+      // Compute item’s sorted dims: itemLong ≥ itemMid ≥ itemShort
+      const sorted = [L, W, H].sort((a,b)=> b - a);
+      const itemLong  = sorted[0];
+      const itemMid   = sorted[1];
+      const itemShort = sorted[2];
+
+      // 1) If the item has height = 4.5 and below → try mailers first
+      if (H === 5) {
+        // Filter mailers whose Long≥itemLong and Mid≥itemMid
+        const candidates = Object.entries(mailers)
+          .map(([code,d]) => {
+            // d = [mLen, mWid], treat mH=0
+            const mDims = [ d[0], d[1], 0 ];
+            const msorted = mDims.sort((a,b)=> b - a);
+            return {
+              code,
+              long:  msorted[0],
+              mid:   msorted[1],
+              short: msorted[2],
+              volume: 0,
+              diag: Math.round(Math.sqrt(d[0]*d[0] + d[1]*d[1]))
+            };
+          })
+          .filter(pkg => pkg.long >= itemLong && pkg.mid >= itemMid)
+          .sort((a,b) => {
+            // sort ascending by diag
+            return a.diag - b.diag;
+          });
+
+        if (candidates.length) {
+          // choose the best mailer
+          return {
+            code: candidates[0].code,
+            L:    mailers[candidates[0].code][0],
+            W:    mailers[candidates[0].code][1],
+            H:    0
+          };
+        }
+      }
+
+      // 2) Otherwise, choose among 3-D boxes
+      const boxCandidates = Object.entries(boxes)
+        .map(([code,d]) => {
+          // d = [bLen, bWid, bH]
+          const bsorted = [d[0], d[1], d[2]].sort((a,b)=> b - a);
+          const boxLong  = bsorted[0];
+          const boxMid   = bsorted[1];
+          const boxShort = bsorted[2];
+          return {
+            code,
+            long: boxLong,
+            mid:  boxMid,
+            short: boxShort,
+            volume: d[0]*d[1]*d[2],
+            diag: Math.round(Math.sqrt(d[0]*d[0] + d[1]*d[1]))
+          };
+        })
+        .filter(pkg => 
+          pkg.long  >= itemLong  &&
+          pkg.mid   >= itemMid   &&
+          pkg.short >= itemShort
+        )
+        .sort((a,b) => {
+          // primary: smallest volume
+          if (a.volume !== b.volume) return a.volume - b.volume;
+          // tiebreak: smallest 2D diagonal
+          return a.diag - b.diag;
+        });
+
+      if (boxCandidates.length) {
+        const chosen = boxCandidates[0];
+        const dims   = boxes[chosen.code]; // [bLen, bWid, bH]
+        return {
+          code: chosen.code,
+          L:    dims[0],
+          W:    dims[1],
+          H:    dims[2]
+        };
+      }
+
+      // 3) If nothing fits, return a “No Match” placeholder
+      return {
+        code: "No Match",
+        L: "-", W: "-", H: "-"
+      };
+    }
+
+    // ── 6) Render matched results into the table ─────────────────────────────────
+    function renderResults(rows) {
+      const tbody = document.querySelector("#resultsTable tbody");
+      tbody.innerHTML = "";
+      rows.forEach(r => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${r.order}</td>
+            <td>${r.sku}</td>
+            <td>${r.L}</td>
+            <td>${r.W}</td>
+            <td>${r.H || "—"}</td>
+            <td>${r.code}</td>
+            <td>${r.pL}</td>
+            <td>${r.pW}</td>
+            <td>${r.pH}</td>
+          </tr>`;
+      });
+    }
+
+    // ── 7) Clear everything for a fresh run ──────────────────────────────────────
+    function clearAll() {
+      document.getElementById("orderFile").value = "";
+      document.getElementById("invFile").value   = "";
+      document.querySelector("#resultsTable tbody").innerHTML = "";
+      document.getElementById("finderResult").style.display = "none";
+      ["qLen","qWid","qHei"].forEach(id => document.getElementById(id).value = "");
+    }
+
+    // Initialize references on page load
+    window.onload = buildReferences;
+  </script>
+</body>
+</html>
+
+"If you have questions or need an updated processor, please let me know. Thank you! - Cassie"

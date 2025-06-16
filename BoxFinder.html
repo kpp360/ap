@@ -170,6 +170,25 @@
       margin-top: 0.5rem;
       text-align: left;
     }
+   .compactTable {
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  min-width: 150px;
+}
+
+.compactTable th,
+.compactTable td {
+  border: 1px solid #d1d5da;
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+}
+
+.compactTable th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
   </style>
   <!-- Include SheetJS for Excel file parsing and export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
@@ -177,6 +196,34 @@
 <body>
   <div class="container">
     <h1>Closest & Next-Compatible Box Finder</h1>
+    <!-- Reference Tables Section -->
+<div id="boxRefSection" style="margin-top: 2rem;">
+  <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: flex-start;">
+
+    <!-- Mailers Reference -->
+    <div>
+      <h2 style="margin-bottom: 0.5rem;">Mailers Reference</h2>
+      <table class="compactTable">
+        <thead>
+          <tr><th>Mailer</th><th>L</th><th>W</th></tr>
+        </thead>
+        <tbody id="mailerTableBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Boxes Reference Grid -->
+    <div style="flex: 1;">
+      <h2 style="margin-bottom: 0.5rem;">Box Reference</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
+        <table class="compactTable"><thead><tr><th>Box</th><th>L</th><th>W</th><th>H</th></tr></thead><tbody id="boxCol1"></tbody></table>
+        <table class="compactTable"><thead><tr><th>Box</th><th>L</th><th>W</th><th>H</th></tr></thead><tbody id="boxCol2"></tbody></table>
+        <table class="compactTable"><thead><tr><th>Box</th><th>L</th><th>W</th><th>H</th></tr></thead><tbody id="boxCol3"></tbody></table>
+        <table class="compactTable"><thead><tr><th>Box</th><th>L</th><th>W</th><th>H</th></tr></thead><tbody id="boxCol4"></tbody></table>
+      </div>
+    </div>
+
+  </div>
+</div>
 
     <!-- Section: Table Entry of Item Details -->
     <div>
@@ -560,6 +607,43 @@ const boxes = [
       XLSX.utils.book_append_sheet(wb, ws, 'Results');
       XLSX.writeFile(wb, 'box_selector_results.xlsx');
     }
+    function renderFourBoxTablesAndMailers() {
+  const mailerBody = document.getElementById('mailerTableBody');
+  const col1 = document.getElementById('boxCol1');
+  const col2 = document.getElementById('boxCol2');
+  const col3 = document.getElementById('boxCol3');
+  const col4 = document.getElementById('boxCol4');
+
+  const mailers = boxes.filter(b => b.name.startsWith('A'));
+  const standardBoxes = boxes.filter(b => b.name.startsWith('B'));
+
+  // Mailer rows
+  mailers.forEach(box => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${box.name}</td><td>${box.length}</td><td>${box.width}</td>`;
+    mailerBody.appendChild(tr);
+  });
+
+  // Divide boxes into 4 columns
+  const perCol = Math.ceil(standardBoxes.length / 4);
+  const boxCols = [
+    standardBoxes.slice(0, perCol),
+    standardBoxes.slice(perCol, perCol * 2),
+    standardBoxes.slice(perCol * 2, perCol * 3),
+    standardBoxes.slice(perCol * 3)
+  ];
+
+  [col1, col2, col3, col4].forEach((tbody, i) => {
+    boxCols[i].forEach(box => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${box.name}</td><td>${box.length}</td><td>${box.width}</td><td>${box.height}</td>`;
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+// Call the render function on load
+renderFourBoxTablesAndMailers();
   </script>
 </body>
 </html>

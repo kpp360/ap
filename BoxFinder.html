@@ -204,11 +204,11 @@
     <div>
       <h2 style="margin-bottom: 0.5rem;">Mailers Reference</h2>
       <table class="compactTable">
-        <thead>
-          <tr><th>Mailer</th><th>L</th><th>W</th></tr>
-        </thead>
-        <tbody id="mailerTableBody"></tbody>
-      </table>
+  <thead>
+    <tr><th>Mailer</th><th>L</th><th>W</th><th>H</th></tr>
+  </thead>
+  <tbody id="mailerTableBody"></tbody>
+</table>
     </div>
 
     <!-- Boxes Reference Grid -->
@@ -607,7 +607,8 @@ const boxes = [
       XLSX.utils.book_append_sheet(wb, ws, 'Results');
       XLSX.writeFile(wb, 'box_selector_results.xlsx');
     }
-    function renderFourBoxTablesAndMailers() {
+ 
+function renderFourBoxTablesAndMailers() {
   const mailerBody = document.getElementById('mailerTableBody');
   const col1 = document.getElementById('boxCol1');
   const col2 = document.getElementById('boxCol2');
@@ -617,10 +618,10 @@ const boxes = [
   const mailers = boxes.filter(b => b.name.startsWith('A'));
   const standardBoxes = boxes.filter(b => b.name.startsWith('B'));
 
-  // Mailer rows
+  // Mailer rows with height included
   mailers.forEach(box => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${box.name}</td><td>${box.length}</td><td>${box.width}</td>`;
+    tr.innerHTML = `<td>${box.name}</td><td>${box.length}</td><td>${box.width}</td><td>${box.height}</td>`;
     mailerBody.appendChild(tr);
   });
 
@@ -642,8 +643,8 @@ const boxes = [
   });
 }
 
-// Call the render function on load
 renderFourBoxTablesAndMailers();
+
   </script>
 </body>
 </html>

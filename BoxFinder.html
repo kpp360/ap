@@ -411,34 +411,36 @@ const boxes = [
     // ───────────────────────────────────────────────────────────────────────────
     // Parse CSV text into array of item objects
     function parseCSVText(text) {
-      const lines = text.trim().split(/\r?\n/);
-      if (lines.length < 2) return [];
-      const header = lines[0].split(',').map(h => h.trim().toLowerCase());
-      const expected = ['sku','length','width','height'];
-      if (!expected.every((h, i) => header[i] === h)) {
-        alert('CSV header must be: sku,length,width,height');
-        return [];
-      }
-      const parsed = [];
-      for (let i = 1; i < lines.length; i++) {
-        const cols = lines[i].split(',').map(c => c.trim());
-        if (cols.length < 4) continue;
-        const [skuVal, lenVal, widVal, heiVal] = cols;
-        const lengthNum = parseFloat(lenVal);
-        const widthNum  = parseFloat(widVal);
-        const heightNum = parseFloat(heiVal);
-        if (!skuVal || isNaN(lengthNum) || isNaN(widthNum) || isNaN(heightNum)) {
-          continue;
-        }
-        parsed.push({
-          sku: skuVal,
-          length: lengthNum,
-          width: widthNum,
-          height: heightNum
-        });
-      }
-      return parsed;
-    }
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+
+  const rawHeader = lines[0].split(',').map(h => h.trim().toLowerCase());
+  const indexMap = {
+    sku: rawHeader.indexOf('sku'),
+    length: rawHeader.indexOf('length'),
+    width: rawHeader.indexOf('width'),
+    height: rawHeader.indexOf('height'),
+  };
+
+  if (Object.values(indexMap).some(i => i === -1)) {
+    alert('CSV must contain headers: sku, length, width, height (case-insensitive)');
+    return [];
+  }
+
+  const parsed = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',').map(c => c.trim());
+    const skuVal = cols[indexMap.sku];
+    const lengthNum = parseFloat(cols[indexMap.length]);
+    const widthNum  = parseFloat(cols[indexMap.width]);
+    const heightNum = parseFloat(cols[indexMap.height]);
+
+    if (!skuVal || isNaN(lengthNum) || isNaN(widthNum) || isNaN(heightNum)) continue;
+    parsed.push({ sku: skuVal, length: lengthNum, width: widthNum, height: heightNum });
+  }
+
+  return parsed;
+}
 
     // ───────────────────────────────────────────────────────────────────────────
     // Updated file upload handler (Excel branch)
@@ -470,23 +472,27 @@ const boxes = [
           const firstSheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[firstSheetName];
           const json = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+const parsed = [];
+json.forEach(row => {
+  const normalizedRow = {};
+  Object.keys(row).forEach(key => {
+    normalizedRow[key.trim().toLowerCase()] = row[key];
+  });
 
-          const parsed = [];
-          json.forEach(row => {
-            const skuVal = row['sku'] || row['SKU'];
-            const lengthNum = parseFloat(row['length']);
-            const widthNum = parseFloat(row['width']);
-            const heightNum = parseFloat(row['height']);
-            if (!skuVal || isNaN(lengthNum) || isNaN(widthNum) || isNaN(heightNum)) return;
-            parsed.push({
-              ...row,
-              sku: skuVal.toString(),
-              length: lengthNum,
-              width: widthNum,
-              height: heightNum
-            });
-          });
+  const skuVal = normalizedRow['sku'];
+  const lengthNum = parseFloat(normalizedRow['length']);
+  const widthNum  = parseFloat(normalizedRow['width']);
+  const heightNum = parseFloat(normalizedRow['height']);
 
+  if (!skuVal || isNaN(lengthNum) || isNaN(widthNum) || isNaN(heightNum)) return;
+
+  parsed.push({
+    sku: skuVal.toString(),
+    length: lengthNum,
+    width: widthNum,
+    height: heightNum
+  });
+});
           if (parsed.length === 0) {
             document.getElementById('resultSection').innerHTML = '<p id="noItems">No valid items found in Excel file.</p>';
             document.getElementById('exportWrapper').innerHTML = '';

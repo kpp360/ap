@@ -7,14 +7,15 @@
   <style>
     /* ---------- Base Styles ---------- */
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f5f7fa;
-      color: #333;
-      margin: 0;
-      padding: 2rem;
-      display: flex;
-      justify-content: center;
-    }
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f7fa;
+  color: #333;
+  margin: 0;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
 
     .container {
       width: 100%;
@@ -188,12 +189,33 @@
   font-weight: 600;
   color: #2c3e50;
 }
+.logo-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.center-logo {
+  max-width: 200px;
+  height: auto;
+  display: block;
+}
+.page-footer {
+  margin-top: 2rem;
+  font-size: 0.85rem;
+  color: #7f8c8d;
+  text-align: center;
+}
+
 
   </style>
   <!-- Include SheetJS for Excel file parsing and export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </head>
 <body>
+ <div class="logo-wrapper">
+  <img src="https://kpp360.github.io/ap/Default%20KarParts360%20LOGO%20Version%203.png" alt="KarParts360 Logo" class="center-logo"/>
+</div>
   <div class="container">
     <h1>Closest & Next-Compatible Box Finder</h1>
     <!-- Reference Tables Section -->
@@ -273,7 +295,9 @@
       <!-- Will display a table of each item and its closest & next-compatible boxes -->
     </div>
   </div>
-
+<footer class="page-footer">
+  By: Ariane S. De Guzman
+</footer>
   <script>
    // ───────────────────────────────────────────────────────────────────────────
 // BOX DATA (static)

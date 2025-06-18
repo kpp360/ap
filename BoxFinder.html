@@ -350,6 +350,16 @@ const boxes = [
       }
       return false;
     }
+function fitScore(itemDims, box) {
+  const sortedItem = [...itemDims].sort((a, b) => b - a); // item: big to small
+  const sortedBox = [box.length, box.width, box.height].sort((a, b) => b - a); // box: big to small
+
+  const slack = (sortedBox[0] - sortedItem[0]) +
+                (sortedBox[1] - sortedItem[1]) +
+                (sortedBox[2] - sortedItem[2]);
+
+  return Math.pow(slack, 2); // square the slack to penalize looser fits
+}
 
     // 3D Fit Check (“fitsInBox”)
    function fitsInBox(itemDims, boxDims) {
@@ -562,7 +572,7 @@ json.forEach(row => {
       };
     }
 
-    compatible.sort((a, b) => a.volume - b.volume);
+    compatible.sort((a, b) => fitScore(dims, a) - fitScore(dims, b));
     const best = compatible[0];
     const next = compatible[1];
 

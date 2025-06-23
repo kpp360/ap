@@ -332,6 +332,8 @@ const boxes = [
   { name: 'A4',  length: 18,   width: 12.5, height: 4 },
   { name: 'A5',  length: 19,   width: 14.25, height: 4.5 }
 ];
+const MAILERS = boxes.filter(b => b.name.startsWith('A'));
+const STD_BOXES = boxes.filter(b => b.name.startsWith('B'));
 
     // ───────────────────────────────────────────────────────────────────────────
     // 2D “Diagonal” Fit Function
@@ -382,6 +384,21 @@ function fitScore(itemDims, box) {
   }
   return { fits: false, explanation: 'Does not fit in any orientation.' };
     }
+    function compatibleList(itemDims, candidateList) {
+  return candidateList
+    .map(box => {
+      const check = fitsInBox(itemDims, [box.length, box.width, box.height]);
+      return check.fits
+        ? {
+            ...box,
+            volume: box.length * box.width * box.height,
+            explanation: check.explanation
+          }
+        : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => fitScore(itemDims, a) - fitScore(itemDims, b));
+}
 
     // ───────────────────────────────────────────────────────────────────────────
     // Add a new blank row to the itemTable
@@ -550,43 +567,48 @@ json.forEach(row => {
   resultDiv.innerHTML = '';
 
   const rows = items.map(item => {
-    const dims = [item.length, item.width, item.height];
-    const compatible = boxes
-      .map(box => {
-        const check = fitsInBox(dims, [box.length, box.width, box.height]);
-        return check.fits ? {
-          ...box,
-          volume: box.length * box.width * box.height,
-          explanation: check.explanation
-        } : null;
-      })
-      .filter(Boolean);
+  const dims = [item.length, item.width, item.height];
+const mailerFits = compatibleList(dims, MAILERS);
+const boxFits = compatibleList(dims, STD_BOXES);
 
-    if (compatible.length === 0) {
-      return {
-        sku: item.sku,
-        itemDims: `${item.length}×${item.width}×${item.height}`,
-        boxName: 'NONE', boxDims: '–', boxVol: '–',
-        nextName: '–', nextDims: '–', nextVol: '–',
-        explanation: 'No compatible box found.'
-      };
-    }
+let compatible = [];
+let containerType = '';
 
-    compatible.sort((a, b) => fitScore(dims, a) - fitScore(dims, b));
-    const best = compatible[0];
-    const next = compatible[1];
+if (mailerFits.length > 0) {
+  compatible = mailerFits;
+  containerType = 'Mailer';
+} else if (boxFits.length > 0) {
+  compatible = boxFits;
+  containerType = 'Box';
+} else {
+  compatible = [];
+  containerType = 'None';
+}
 
-    return {
-      sku: item.sku,
-      itemDims: `${item.length}×${item.width}×${item.height}`,
-      boxName: best.name,
-      boxDims: `${best.length}×${best.width}×${best.height}`,
-      boxVol: best.volume,
-      nextName: next ? next.name : '–',
-      nextDims: next ? `${next.length}×${next.width}×${next.height}` : '–',
-      nextVol: next ? next.volume : '–',
-      explanation: best.explanation
-    };
+if (compatible.length === 0) {
+  return {
+    sku: item.sku,
+    itemDims: `${item.length}×${item.width}×${item.height}`,
+    boxName: 'NONE', boxDims: '–', boxVol: '–',
+    nextName: '–', nextDims: '–', nextVol: '–',
+    explanation: 'No compatible mailer or box found.'
+  };
+}
+
+const best = compatible[0];
+const next = compatible[1];
+
+return {
+  sku: item.sku,
+  itemDims: `${item.length}×${item.width}×${item.height}`,
+  boxName: best.name + ` (${containerType})`,
+  boxDims: `${best.length}×${best.width}×${best.height}`,
+  boxVol: best.volume,
+  nextName: next ? next.name + ` (${containerType})` : '–',
+  nextDims: next ? `${next.length}×${next.width}×${next.height}` : '–',
+  nextVol: next ? next.volume : '–',
+  explanation: best.explanation
+};
   });
 
   const table = document.createElement('table');

@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Box & Mailer Selector</title>
   <style>
-    /* ---------- Base Styles ---------- */
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #f5f7fa;
@@ -16,7 +15,6 @@
       flex-direction: column;
       align-items: center;
     }
-
     .container {
       width: 100%;
       max-width: 1000px;
@@ -25,41 +23,34 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
       padding: 2rem;
     }
-
     h1, h2 {
       color: #2c3e50;
       margin-bottom: 0.5rem;
     }
-
     h1 {
       font-size: 1.75rem;
       border-bottom: 2px solid #e1e4e8;
       padding-bottom: 0.5rem;
       margin-bottom: 1.5rem;
     }
-
     h2 {
       font-size: 1.25rem;
       margin-top: 1.5rem;
     }
-
     label {
       display: block;
       font-weight: 600;
       margin-bottom: 0.25rem;
       color: #34495e;
     }
-
     input[type="text"], input[type="number"], input[type="file"], button {
       font-size: 1rem;
       margin-bottom: 1rem;
       box-sizing: border-box;
     }
-
     input[type="file"] {
       padding: 0.5rem;
     }
-
     button {
       background-color: #3498db;
       border: none;
@@ -70,18 +61,14 @@
       transition: background-color 0.2s ease;
       margin-right: 0.5rem;
     }
-
     button:hover { background-color: #2980b9; }
     button:disabled { background-color: #95a5a6; cursor: not-allowed; }
-
-    /* ---------- Item Table Styles ---------- */
     #itemTable {
       border-collapse: collapse;
       width: 100%;
       margin-top: 0.5rem;
       font-size: 0.95rem;
     }
-
     #itemTable th, #itemTable td { border: 1px solid #e1e4e8; padding: 0; }
     #itemTable th {
       background-color: #f0f3f6;
@@ -90,9 +77,7 @@
       text-align: left;
       padding: 0.75rem;
     }
-
     #itemTable td { background-color: #fff; }
-
     #itemTable input {
       width: 100%;
       border: none;
@@ -100,7 +85,6 @@
       box-sizing: border-box;
       font-size: 0.95rem;
     }
-
     #itemTable input:focus { outline: 2px solid #3498db; background-color: #ecf6fd; }
     #itemTable .deleteRowBtn {
       background-color: #e74c3c;
@@ -114,8 +98,6 @@
     }
     #itemTable .deleteRowBtn:hover { background-color: #c0392b; }
     .table-controls { margin-top: 0.5rem; margin-bottom: 1rem; }
-
-    /* ---------- Result Table Styles ---------- */
     .resultTable {
       border-collapse: collapse;
       width: 100%;
@@ -126,11 +108,7 @@
     .resultTable th { background-color: #f0f3f6; color: #2c3e50; font-weight: 600; }
     .resultTable tbody tr:nth-child(even) { background-color: #f9fafb; }
     .highlight { background-color: #fffae6 !important; }
-
-    /* ---------- Export Button Placement ---------- */
     .export-controls { margin-top: 0.5rem; text-align: left; }
-
-    /* ---------- Compact Reference Tables ---------- */
     .compactTable {
       border-collapse: collapse;
       font-size: 0.85rem;
@@ -138,13 +116,10 @@
     }
     .compactTable th, .compactTable td { border: 1px solid #d1d5da; padding: 0.35rem 0.6rem; text-align: left; }
     .compactTable th { background-color: #f3f4f6; font-weight: 600; color: #2c3e50; }
-
-    /* ---------- Misc ---------- */
     .logo-wrapper { display: flex; justify-content: center; margin-bottom: 1.5rem; }
     .center-logo { max-width: 200px; height: auto; display: block; }
     .page-footer { margin-top: 2rem; font-size: 0.85rem; color: #7f8c8d; text-align: center; }
   </style>
-  <!-- Include SheetJS for Excel file parsing and export -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -153,11 +128,8 @@
   </div>
   <div class="container">
     <h1>Closest & Alternative Box Finder</h1>
-
-    <!-- Reference Tables Section -->
     <div id="boxRefSection" style="margin-top: 2rem;">
       <div style="display: flex; flex-wrap: wrap; gap: 2rem; align-items: flex-start;">
-        <!-- Mailers Reference -->
         <div>
           <h2 style="margin-bottom: 0.5rem;">Mailers Reference</h2>
           <table class="compactTable">
@@ -165,8 +137,6 @@
             <tbody id="mailerTableBody"></tbody>
           </table>
         </div>
-
-        <!-- Boxes Reference Grid -->
         <div style="flex: 1;">
           <h2 style="margin-bottom: 0.5rem;">Box Reference</h2>
           <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
@@ -178,15 +148,13 @@
         </div>
       </div>
     </div>
-
-    <!-- Section: Table Entry of Item Details -->
     <div>
       <h2>Enter Item Details in Table</h2>
-      <p style="color: #7f8c8d; font-size: 0.9rem;">Use the table below like a mini‐spreadsheet. Fill in SKU, length, width, height. Add or delete rows as needed.</p>
+      <p style="color: #7f8c8d; font-size: 0.9rem;">Use the table below like a mini‐spreadsheet. Fill in SKU, length, width, height, and weight. Add or delete rows as needed.</p>
       <table id="itemTable">
         <thead>
           <tr>
-            <th>SKU</th><th>Length</th><th>Width</th><th>Height</th><th>Actions</th>
+            <th>SKU</th><th>Length</th><th>Width</th><th>Height</th><th>Weight</th><th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -195,6 +163,7 @@
             <td><input type="number" step="any" placeholder="e.g. 10"/></td>
             <td><input type="number" step="any" placeholder="e.g. 5"/></td>
             <td><input type="number" step="any" placeholder="e.g. 3"/></td>
+            <td><input type="number" step="any" class="item-weight" placeholder="e.g. 2.5"/></td>
             <td><button class="deleteRowBtn">Delete</button></td>
           </tr>
         </tbody>
@@ -204,29 +173,23 @@
         <button id="processTableBtn">Process Table Items</button>
       </div>
     </div>
-
-    <!-- Section: Upload CSV or Excel File -->
     <div>
       <h2>Or Upload CSV / Excel File</h2>
       <p style="color: #7f8c8d; font-size: 0.9rem;">
         Accepted formats: <code>.csv</code>, <code>.xls</code>, <code>.xlsx</code>.<br />
-        File must have header <code>sku,length,width,height</code>.
+        File must have header <code>sku,length,width,height,weight</code>.
       </p>
       <input type="file" id="fileInput" accept=".csv, .xls, .xlsx" />
       <div id="exportWrapper" class="export-controls"></div>
     </div>
-
-    <!-- Section: Results -->
     <div id="resultSection"></div>
   </div>
-
   <footer class="page-footer">By: Ariane S. De Guzman</footer>
-
   <script>
   // ───────────────────────────────────────────────────────────────────────────
   // BOX DATA (static)
   const boxes = [
-    { name: 'B1',  length: 10, width: 8,  height: 6 },
+   { name: 'B1',  length: 10, width: 8,  height: 6 },
     { name: 'B2',  length: 12, width: 6,  height: 6 },
     { name: 'B3',  length: 12, width: 12, height: 8 },
     { name: 'B4',  length: 14, width: 10, height: 8 },
@@ -259,8 +222,6 @@
   const MAILERS = boxes.filter(b => b.name.startsWith('A'));
   const STD_BOXES = boxes.filter(b => b.name.startsWith('B'));
 
-  // ───────────────────────────────────────────────────────────────────────────
-  // Utility: 2D diagonal fit
   function canFit2D(a, b, p, q) {
     if ((a <= p && b <= q) || (a <= q && b <= p)) return true;
     const RAD = Math.PI / 180;
@@ -272,14 +233,12 @@
     }
     return false;
   }
-
   function fitScore(itemDims, box) {
     const sortedItem = [...itemDims].sort((a, b) => b - a);
     const sortedBox = [box.length, box.width, box.height].sort((a, b) => b - a);
     const slack = (sortedBox[0]-sortedItem[0]) + (sortedBox[1]-sortedItem[1]) + (sortedBox[2]-sortedItem[2]);
     return slack**2;
   }
-
   function fitsInBox(itemDims, boxDims) {
     const [Li, Wi, Hi] = itemDims;
     const [Lb, Wb, Hb] = boxDims;
@@ -296,7 +255,6 @@
     }
     return { fits: false, explanation: 'Does not fit in any orientation.' };
   }
-
   function compatibleList(itemDims, list) {
     return list
       .map(b => {
@@ -308,7 +266,6 @@
   }
 
   // ───────────────────────────────────────────────────────────────────────────
-  // Row controls
   document.getElementById('addRowBtn').addEventListener('click', () => {
     const tbody = document.querySelector('#itemTable tbody');
     tbody.insertAdjacentHTML('beforeend', `<tr>
@@ -316,10 +273,10 @@
       <td><input type="number" step="any" placeholder="e.g. 10"/></td>
       <td><input type="number" step="any" placeholder="e.g. 5"/></td>
       <td><input type="number" step="any" placeholder="e.g. 3"/></td>
+      <td><input type="number" step="any" class="item-weight" placeholder="e.g. 2.5"/></td>
       <td><button class="deleteRowBtn">Delete</button></td>
     </tr>`);
   });
-
   document.querySelector('#itemTable').addEventListener('click', e => {
     if (e.target.classList.contains('deleteRowBtn')) e.target.closest('tr').remove();
   });
@@ -327,11 +284,14 @@
   function getItemsFromTable() {
     return Array.from(document.querySelectorAll('#itemTable tbody tr')).reduce((acc,row) => {
       const c = row.querySelectorAll('input');
-      const sku = c[0].value.trim();
-      const l = parseFloat(c[1].value);
-      const w = parseFloat(c[2].value);
-      const h = parseFloat(c[3].value);
-      if (sku && ![l,w,h].some(isNaN)) acc.push({ sku, length:l, width:w, height:h });
+      const sku    = c[0].value.trim();
+      const l      = parseFloat(c[1].value);
+      const w      = parseFloat(c[2].value);
+      const h      = parseFloat(c[3].value);
+      const weight = parseFloat(c[4].value);
+      if (sku && ![l,w,h,weight].some(isNaN)) {
+        acc.push({ sku, length:l, width:w, height:h, weight });
+      }
       return acc;
     }, []);
   }
@@ -342,32 +302,40 @@
     else document.getElementById('resultSection').innerHTML = '<p id="noItems">No valid items found in the table.</p>';
   });
 
-  // CSV parsing helper
   function parseCSVText(txt) {
     const lines = txt.trim().split(/\r?\n/);
     if (lines.length < 2) return [];
     const header = lines[0].split(',').map(h => h.trim().toLowerCase());
-    const idx = { sku: header.indexOf('sku'), length: header.indexOf('length'), width: header.indexOf('width'), height: header.indexOf('height') };
-    if (Object.values(idx).some(i=>i===-1)) { alert('CSV must contain headers: sku, length, width, height'); return []; }
+    const idx = {
+      sku:    header.indexOf('sku'),
+      length: header.indexOf('length'),
+      width:  header.indexOf('width'),
+      height: header.indexOf('height'),
+      weight: header.indexOf('weight')
+    };
+    if (Object.values(idx).some(i=>i===-1)) { alert('CSV must contain headers: sku, length, width, height, weight'); return []; }
     return lines.slice(1).reduce((a,l) => {
       const cols = l.split(',').map(c=>c.trim());
       const sku = cols[idx.sku];
       const len = parseFloat(cols[idx.length]);
       const wid = parseFloat(cols[idx.width]);
       const hei = parseFloat(cols[idx.height]);
-      if (sku && ![len,wid,hei].some(isNaN)) a.push({ sku, length:len, width:wid, height:hei });
+      const wt  = parseFloat(cols[idx.weight]);
+      if (sku && ![len,wid,hei,wt].some(isNaN)) a.push({ sku, length:len, width:wid, height:hei, weight:wt });
       return a;
     }, []);
   }
 
-  // File upload handler
   document.getElementById('fileInput').addEventListener('change', e => {
     const file = e.target.files[0]; if (!file) return;
     const lower = file.name.toLowerCase();
     const reader = new FileReader();
-
     if (lower.endsWith('.csv')) {
-      reader.onload = evt => { const parsed = parseCSVText(evt.target.result); parsed.length ? processItems(parsed) : alert('No valid items found.'); e.target.value=''; };
+      reader.onload = evt => {
+        const parsed = parseCSVText(evt.target.result);
+        parsed.length ? processItems(parsed) : alert('No valid items found.');
+        e.target.value = '';
+      };
       reader.readAsText(file);
     } else if (lower.endsWith('.xls') || lower.endsWith('.xlsx')) {
       reader.onload = evt => {
@@ -376,33 +344,39 @@
         const sheet = workbook.Sheets[workbook.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(sheet,{ defval:'' });
         const parsed = json.reduce((a,row)=>{
-          const r = {}; Object.keys(row).forEach(k => r[k.trim().toLowerCase()] = row[k]);
-          const sku = r['sku']; const len=parseFloat(r['length']); const wid=parseFloat(r['width']); const hei=parseFloat(r['height']);
-          if (sku && ![len,wid,hei].some(isNaN)) a.push({ sku:sku.toString(), length:len, width:wid, height:hei });
+          const r = {};
+          Object.keys(row).forEach(k => r[k.trim().toLowerCase()] = row[k]);
+          const sku = r['sku'];
+          const len = parseFloat(r['length']);
+          const wid = parseFloat(r['width']);
+          const hei = parseFloat(r['height']);
+          const wt  = parseFloat(r['weight']);
+          if (sku && ![len,wid,hei,wt].some(isNaN)) a.push({ sku:sku.toString(), length:len, width:wid, height:hei, weight:wt });
           return a;
         }, []);
         parsed.length ? processItems(parsed) : alert('No valid items found.');
-        e.target.value='';
+        e.target.value = '';
       };
       reader.readAsArrayBuffer(file);
     } else {
       alert('Unsupported file type.');
-      e.target.value='';
+      e.target.value = '';
     }
   });
 
   // ───────────────────────────────────────────────────────────────────────────
-  // MAIN: process items and render results
   function processItems(items) {
     const resultDiv = document.getElementById('resultSection');
     resultDiv.innerHTML = '';
 
-    const rows = items.map((item) => {
-      const dims = [item.length, item.width, item.height];
+    const rows = items.map((item, i) => {
+      const dims       = [item.length, item.width, item.height];
       const mailerFits = compatibleList(dims, MAILERS);
       const boxFits    = compatibleList(dims, STD_BOXES);
 
-      // Determine primary (best) and secondary (alternative) containers
+      // if weight ≤ 3, skip mailers
+      if (item.weight <= 3) mailerFits.length = 0;
+
       let primary = null, secondary = null;
       let primaryType = '', secondaryType = '';
 
@@ -427,26 +401,29 @@
         return {
           sku: item.sku,
           itemDims: `${item.length}×${item.width}×${item.height}`,
-          primaryName:'NONE', primaryDims:'–', primaryVol:'–',
-          secondaryName:'–', secondaryDims:'–', secondaryVol:'–',
+          primaryDisplay:'NONE',
+          primaryVol:'–',
+          secondaryDisplay:'–',
+          secondaryVol:'–',
           explanation:'No compatible mailer or box found.'
         };
       }
 
+      const primaryDisplay   = `${primary.name} ${primary.length}×${primary.width}×${primary.height}`;
+      const secondaryDisplay = secondary ? `${secondary.name} ${secondary.length}×${secondary.width}×${secondary.height}` : '–';
+
       return {
         sku: item.sku,
         itemDims: `${item.length}×${item.width}×${item.height}`,
-        primaryName: `${primary.name} (${primaryType})`,
-        primaryDims: `${primary.length}×${primary.width}×${primary.height}`,
+        primaryDisplay,
         primaryVol: primary.volume,
-        secondaryName: secondary ? `${secondary.name} (${secondaryType})` : '–',
-        secondaryDims: secondary ? `${secondary.length}×${secondary.width}×${secondary.height}` : '–',
+        secondaryDisplay,
         secondaryVol: secondary ? secondary.volume : '–',
         explanation: primary.explanation
       };
     });
 
-    // Build table
+    // Build result table
     const table = document.createElement('table');
     table.className = 'resultTable';
     table.innerHTML = `
@@ -455,10 +432,8 @@
           <th>SKU</th>
           <th>Item Dimensions (L×W×H)</th>
           <th>Closest Container</th>
-          <th>Container Dimensions (L×W×H)</th>
           <th>Container Volume</th>
           <th>Alternative Container</th>
-          <th>Alt Dimensions (L×W×H)</th>
           <th>Alt Volume</th>
           <th>Explanation</th>
         </tr>
@@ -468,11 +443,9 @@
         <tr>
           <td>${r.sku}</td>
           <td>${r.itemDims}</td>
-          <td class="highlight">${r.primaryName}</td>
-          <td class="highlight">${r.primaryDims}</td>
+          <td class="highlight">${r.primaryDisplay}</td>
           <td class="highlight">${r.primaryVol}</td>
-          <td>${r.secondaryName}</td>
-          <td>${r.secondaryDims}</td>
+          <td>${r.secondaryDisplay}</td>
           <td>${r.secondaryVol}</td>
           <td>
             <button onclick="toggleExplanation('exp-${i}')">Show</button>
@@ -481,7 +454,7 @@
         </tr>`).join('')}
       </tbody>`;
 
-    resultDiv.appendChild(table);
+    document.getElementById('resultSection').appendChild(table);
 
     // Excel export
     const expWrap = document.getElementById('exportWrapper');
@@ -494,8 +467,8 @@
 
   function exportToExcel(data) {
     const headers = [
-      'sku','itemDims','primaryName','primaryDims','primaryVol',
-      'secondaryName','secondaryDims','secondaryVol','explanation'
+      'sku','itemDims','primaryDisplay','primaryVol',
+      'secondaryDisplay','secondaryVol','explanation'
     ];
     const wsData = [headers, ...data.map(r => headers.map(k => r[k]))];
     const wb = XLSX.utils.book_new();
@@ -504,7 +477,6 @@
     XLSX.writeFile(wb, 'box_selector_results.xlsx');
   }
 
-  // Render reference tables
   function renderReferenceTables() {
     const mailBody = document.getElementById('mailerTableBody');
     const cols = [document.getElementById('boxCol1'), document.getElementById('boxCol2'), document.getElementById('boxCol3'), document.getElementById('boxCol4')];
@@ -516,7 +488,6 @@
   }
   renderReferenceTables();
 
-  // Toggle explanation helpers
   function toggleExplanation(id) {
     const el = document.getElementById(id);
     if (!el) return;

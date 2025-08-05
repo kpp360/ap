@@ -374,8 +374,8 @@
       const mailerFits = compatibleList(dims, MAILERS);
       const boxFits    = compatibleList(dims, STD_BOXES);
 
-      // if weight ≤ 3, skip mailers
-      if (item.weight <= 3) mailerFits.length = 0;
+      // if weight ≤ 2, skip mailers
+      if (item.weight <= 2) mailerFits.length = 0;
 
       let primary = null, secondary = null;
       let primaryType = '', secondaryType = '';

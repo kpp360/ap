@@ -414,7 +414,7 @@ if (item.weight > 2) mailerFits.length = 0;
 
       return {
         sku: item.sku,
-        itemDims: `${item.length}×${item.width}×${item.height}`,
+        itemDims: `${item.length}×${item.width}×${item.height} (${item.weight} lbs)`,
         primaryDisplay,
         primaryVol: primary.volume,
         secondaryDisplay,
@@ -430,7 +430,7 @@ if (item.weight > 2) mailerFits.length = 0;
       <thead>
         <tr>
           <th>SKU</th>
-          <th>Item Dimensions (L×W×H)</th>
+          <th>Item Dimensions (L×W×H + Weight)</th>
           <th>Closest Container</th>
           <th>Container Volume</th>
           <th>Alternative Container</th>

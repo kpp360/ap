@@ -99,6 +99,8 @@
         <button id="processBtn" disabled>Process</button>
         <button id="downloadCsvBtn" class="ghost" disabled>Download CSV</button>
         <button id="downloadXlsxBtn" class="secondary" disabled>Download Excel</button>
+        <!-- New button -->
+        <button id="downloadOrderFileBtn" class="ghost" disabled>Download Order File</button>
       </div>
       <div id="previewWrap" style="max-height:520px; overflow:auto; margin-top:12px; border:1px solid var(--border); border-radius:12px">
         <table id="previewTable" style="display:none"></table>
@@ -116,6 +118,9 @@
 (() => {
   const $ = id => document.getElementById(id);
   let workbookData = null, headers = null, outData = [];
+  // Track the exact keys used for Site Order ID and Quantity inside outData
+  let soidHeaderKey = 'Site Order ID';
+  let qtyHeaderKey = 'Quantity';
 
   // Theme toggle
   document.getElementById('darkToggle').addEventListener('click', () => {
@@ -200,15 +205,19 @@
 
     if (fnIdx === -1 || lnIdx === -1 || skuIdx === -1) return alert('Missing required columns: First Name, Last Name, and a header containing SKU');
 
+    // Capture the exact keys that will be used in outData for Site Order ID and Quantity
+    soidHeaderKey = soidIdx !== -1 ? (headers[soidIdx] || 'Site Order ID') : 'Site Order ID';
+    qtyHeaderKey = qtyIdx !== -1 ? (headers[qtyIdx] || 'Quantity') : 'Quantity';
+
     const rows = workbookData.slice(1);
     outData = rows.filter(row => row && row.some(v => v !== '' && v != null)).map(row => {
       const rec = {};
       if (poNumber) rec['PO Number'] = poNumber;
       if (odIdx !== -1) rec[headers[odIdx] || 'Order Date'] = formatOrderDate(row[odIdx]);
-      if (soidIdx !== -1) rec[headers[soidIdx] || 'Site Order ID'] = row[soidIdx];
+      if (soidIdx !== -1) rec[soidHeaderKey] = row[soidIdx];
       rec['Bundle SKU'] = row[skuIdx];
       rec['SKU'] = cleanSku(row[skuIdx], patterns, useRegex, useWildcards, caseSensitive);
-      if (qtyIdx !== -1) rec[headers[qtyIdx] || 'Quantity'] = row[qtyIdx];
+      if (qtyIdx !== -1) rec[qtyHeaderKey] = row[qtyIdx];
       rec['Full Name'] = `${row[fnIdx]||''} ${row[lnIdx]||''}`.trim();
       headers.forEach((h, i) => {
         if ([fnIdx, lnIdx, skuIdx, odIdx, soidIdx, qtyIdx].includes(i)) return;
@@ -229,6 +238,7 @@
     table.style.display = '';
     $("downloadCsvBtn").disabled = false;
     $("downloadXlsxBtn").disabled = false;
+    $("downloadOrderFileBtn").disabled = false; // enable new button
     $("rowCount").textContent = `${outData.length} rows processed`;
     showStatus('Preview ready');
   }
@@ -257,7 +267,7 @@
       workbookData = await readFile(file);
       headers = (workbookData[0] || []).map(h => String(h).trim());
       $("processBtn").disabled = false;
-      const { fnIdx, lnIdx, skuIdx, odIdx, soidIdx, qtyIdx } = detectColumns(headers);
+      const { odIdx, soidIdx, qtyIdx } = detectColumns(headers);
       const chips = [];
       if (odIdx !== -1) chips.push(`<span class=\"chip\">Order Date → DD/MM/YYYY</span>`);
       if (soidIdx !== -1) chips.push(`<span class=\"chip\">Site Order ID detected</span>`);
@@ -286,6 +296,25 @@
     XLSX.utils.book_append_sheet(wb, ws, 'Output');
     const poNumber = $("poNumber").value || 'output';
     XLSX.writeFile(wb, `${poNumber}.xlsx`);
+  });
+
+  // Download Order File — only PO Number, Site Order ID, SKU, Quantity
+  $("downloadOrderFileBtn").addEventListener('click', () => {
+    if (!outData.length) return alert('No processed data available.');
+
+    const poKey = 'PO Number';
+    const minimalData = outData.map(row => ({
+      [poKey]: row[poKey] || '',
+      [soidHeaderKey]: row[soidHeaderKey] || '',
+      'SKU': row['SKU'] || '',
+      [qtyHeaderKey]: row[qtyHeaderKey] || ''
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(minimalData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Order File');
+    const poNumber = $("poNumber").value || 'order_file';
+    XLSX.writeFile(wb, `${poNumber}_order_file.xlsx`);
   });
 })();
 </script>

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PO File Processor</title>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --bg:#f7f7fb; --card:#ffffff; --muted:#6b7280; --text:#0f172a; --accent:#2563eb; --border:#e5e7eb;
+      --accent-weak:#eff6ff; --chip:#f3f4f6; --ok:#16a34a; --warn:#b45309; --err:#dc2626; --status-bg:#eff6ff; --status-text:#1e40af; --status-border:#bfdbfe;
+    }
+    body.dark {
+      --bg:#0f172a; --card:#1e293b; --muted:#94a3b8; --text:#f1f5f9; --accent:#3b82f6; --border:#334155;
+      --accent-weak:#1e3a8a; --chip:#334155; --ok:#22c55e; --warn:#f59e0b; --err:#ef4444; --status-bg:#1e3a8a; --status-text:#f1f5f9; --status-border:#3b82f6;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);transition:background .3s,color .3s}
+    .wrap{max-width:980px;margin:32px auto;padding:0 16px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+    header{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{display:flex;align-items:center;gap:10px}
+    header h1{font-size:20px;margin:0;font-weight:800}
+    header p{margin:6px 0 0 0;color:var(--muted);font-size:12px}
+    .created-by{font-size:11px;color:var(--muted);margin-top:4px}
+    .toggle-dark{background:var(--chip);border:1px solid var(--border);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:12px;color:var(--text)}
+    .section{padding:18px 20px;border-bottom:1px solid var(--border)}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .field{display:flex;flex-direction:column;gap:6px}
+    .field label{font-size:13px;color:var(--muted)}
+    input[type="text"], input[type="file"], select{background:var(--card);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:10px;width:100%}
+    input[type="checkbox"]{transform:scale(1.05)}
+    .hint{font-size:12px;color:var(--muted)}
+    .controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    button{background:var(--accent);color:white;border:0;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer}
+    button.secondary{background:#0ea5e9}
+    button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+    button[disabled]{opacity:.5;cursor:not-allowed}
+    .status{display:flex;gap:8px;align-items:center;background:var(--status-bg);color:var(--status-text);border:1px solid var(--status-border);padding:10px 12px;border-radius:10px;font-size:12px;transition:background .3s,color .3s,border-color .3s}
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .chip{background:var(--chip);border:1px solid var(--border);padding:6px 10px;border-radius:999px;font-size:12px;color:var(--text)}
+    .dropzone{border:2px dashed var(--border);border-radius:12px;padding:14px;background:var(--card)}
+    .dropzone.drag{border-color:#93c5fd;background:var(--accent-weak)}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead th{position:sticky;top:0;background:var(--card);border-bottom:1px solid var(--border);padding:10px;text-align:left}
+    tbody td{border-bottom:1px solid var(--border);padding:8px;color:var(--text)}
+    .footerbar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-top:1px solid var(--border);background:var(--card);border-radius:0 0 16px 16px}
+    .file-status{font-size:12px;color:var(--ok);margin-top:6px;display:none}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <header>
+      <div class="brand">
+        <img src="https://kpp360.github.io/ap/Default%20KarParts360%20LOGO%20Version%203.png" alt="KarParts360 Logo" style="height:20px;width:auto">
+        <div>
+          <h1>PO File Processor</h1>
+          <p>Combine names, tidy SKUs, format Order Date, set PO Number, and export.</p>
+          <div class="created-by">Created by: Ariane S. De Guzman</div>
+        </div>
+      </div>
+      <button id="darkToggle" class="toggle-dark">🌙 Dark Mode</button>
+      <div id="status" class="status" style="display:none"></div>
+    </header>
+
+    <div class="section">
+      <div class="grid-2">
+        <div class="field">
+          <label>Step 1 — Upload Excel/CSV</label>
+          <div class="controls">
+            <input id="file" type="file" accept=".xlsx,.xls,.csv">
+          </div>
+          <div id="fileStatus" class="file-status">File uploaded successfully!</div>
+          <div class="hint">We read the first sheet for Excel files.</div>
+        </div>
+        <div class="field">
+          <label>Step 2 — PO Number</label>
+          <input id="poNumber" type="text" placeholder="Enter PO Number to add to each row & use for filename">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="field">
+        <label>Step 3 — Texts/Patterns to remove from SKU (comma or newline separated)</label>
+        <input id="removeText" type="text" placeholder="e.g. BNDL-, -KIT, ^KIT-\\d+, CL360***">
+        <div class="controls hint">
+          <label class="controls"><input id="useWildcards" type="checkbox"> Use Wildcards (*, ?)</label>
+          <label class="controls"><input id="useRegex" type="checkbox"> Use Regex</label>
+          <label class="controls"><input id="caseSensitive" type="checkbox"> Case Sensitive</label>
+        </div>
+        <div class="chips" id="detectedChips" style="margin-top:8px"></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="controls">
+        <button id="processBtn" disabled>Process</button>
+        <button id="downloadCsvBtn" class="ghost" disabled>Download CSV</button>
+        <button id="downloadXlsxBtn" class="secondary" disabled>Download Excel</button>
+      </div>
+      <div id="previewWrap" style="max-height:520px; overflow:auto; margin-top:12px; border:1px solid var(--border); border-radius:12px">
+        <table id="previewTable" style="display:none"></table>
+      </div>
+    </div>
+
+    <div class="footerbar">
+      <div class="hint">Columns order: PO Number · Order Date · Site Order ID · Bundle SKU · SKU · Quantity · Full Name · (others)</div>
+      <div class="hint" id="rowCount"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  let workbookData = null, headers = null, outData = [];
+
+  // Theme toggle
+  document.getElementById('darkToggle').addEventListener('click', () => {
+    document.body.classList.toggle('dark');
+    document.getElementById('darkToggle').textContent = document.body.classList.contains('dark') ? '☀️ Light Mode' : '🌙 Dark Mode';
+    try { localStorage.setItem('kp_theme', document.body.classList.contains('dark') ? 'dark' : 'light'); } catch(e) {}
+  });
+  (function(){
+    try{ if(localStorage.getItem('kp_theme')==='dark'){ document.body.classList.add('dark'); document.getElementById('darkToggle').textContent = '☀️ Light Mode'; } }catch(e){}
+  })();
+
+  function showStatus(text){
+    const el = $("status");
+    el.textContent = text;
+    el.style.display = text ? 'flex' : 'none';
+  }
+
+  function detectColumns(hdrs) {
+    const findIdx = regex => hdrs.findIndex(h => (h+"").match(regex));
+    return { fnIdx: findIdx(/first\s*name/i), lnIdx: findIdx(/last\s*name/i), skuIdx: findIdx(/sku/i), odIdx: findIdx(/order\s*date/i), soidIdx: findIdx(/site\s*order\s*id/i), qtyIdx: findIdx(/quantity/i) };
+  }
+
+  function splitPatterns(str){
+    return (str || '').split(/[\n,]/).map(t => t.trim()).filter(Boolean);
+  }
+
+  function cleanSku(value, patterns, useRegex, useWildcards, caseSensitive) {
+    if (value == null) return value;
+    if (!patterns || !patterns.length) return String(value);
+    let out = String(value);
+    const flags = caseSensitive ? 'g' : 'gi';
+    for (const p of patterns) {
+      try {
+        let re;
+        if (useWildcards) {
+          const esc = p.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.');
+          re = new RegExp(esc, flags);
+        } else if (useRegex) {
+          re = new RegExp(p, flags);
+        } else {
+          re = new RegExp(p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), flags);
+        }
+        out = out.replace(re, '');
+      } catch (e) {}
+    }
+    return out.trim();
+  }
+
+  function excelDateToJSDate(n){
+    const epoch = Date.UTC(1899, 11, 30);
+    return new Date(epoch + n * 86400000);
+  }
+  function pad(n){ return n < 10 ? '0'+n : ''+n; }
+  function formatOrderDate(v){
+    if (v == null || v === '') return '';
+    let d;
+    if (typeof v === 'number'){ d = excelDateToJSDate(v); }
+    else if (typeof v === 'string'){
+      const s = v.split(/[T ]/)[0];
+      const mIso = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+      if (mIso) { d = new Date(Date.UTC(+mIso[1], +mIso[2]-1, +mIso[3])); }
+      else {
+        const mDMY = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+        if (mDMY) { d = new Date(Date.UTC(mDMY[3].length===2?2000+ +mDMY[3]:+mDMY[3], +mDMY[2]-1, +mDMY[1])); }
+        else {
+          const t = new Date(s);
+          if (!isNaN(t)) d = t; else return s;
+        }
+      }
+    }
+    if (!d || isNaN(d)) return String(v);
+    return `${pad(d.getUTCDate())}/${pad(d.getUTCMonth()+1)}/${d.getUTCFullYear()}`;
+  }
+
+  function buildOutput() {
+    const { fnIdx, lnIdx, skuIdx, odIdx, soidIdx, qtyIdx } = detectColumns(headers);
+    const patterns = splitPatterns($("removeText").value);
+    const useWildcards = $("useWildcards").checked;
+    const useRegex = $("useRegex").checked;
+    const caseSensitive = $("caseSensitive").checked;
+    const poNumber = $("poNumber").value;
+
+    if (fnIdx === -1 || lnIdx === -1 || skuIdx === -1) return alert('Missing required columns: First Name, Last Name, and a header containing SKU');
+
+    const rows = workbookData.slice(1);
+    outData = rows.filter(row => row && row.some(v => v !== '' && v != null)).map(row => {
+      const rec = {};
+      if (poNumber) rec['PO Number'] = poNumber;
+      if (odIdx !== -1) rec[headers[odIdx] || 'Order Date'] = formatOrderDate(row[odIdx]);
+      if (soidIdx !== -1) rec[headers[soidIdx] || 'Site Order ID'] = row[soidIdx];
+      rec['Bundle SKU'] = row[skuIdx];
+      rec['SKU'] = cleanSku(row[skuIdx], patterns, useRegex, useWildcards, caseSensitive);
+      if (qtyIdx !== -1) rec[headers[qtyIdx] || 'Quantity'] = row[qtyIdx];
+      rec['Full Name'] = `${row[fnIdx]||''} ${row[lnIdx]||''}`.trim();
+      headers.forEach((h, i) => {
+        if ([fnIdx, lnIdx, skuIdx, odIdx, soidIdx, qtyIdx].includes(i)) return;
+        rec[h || `Column ${i+1}`] = row[i];
+      });
+      return rec;
+    });
+    renderPreview();
+  }
+
+  function renderPreview() {
+    const table = $("previewTable");
+    table.innerHTML = '';
+    if (!outData.length) { showStatus('No rows to display'); $("rowCount").textContent=''; return; }
+    const cols = Object.keys(outData[0]);
+    table.innerHTML = `<thead><tr>${cols.map(c => `<th>${c}</th>`).join('')}</tr></thead>` +
+                      `<tbody>${outData.slice(0, 200).map(r => `<tr>${cols.map(c => `<td>${r[c]||''}</td>`).join('')}</tr>`).join('')}</tbody>`;
+    table.style.display = '';
+    $("downloadCsvBtn").disabled = false;
+    $("downloadXlsxBtn").disabled = false;
+    $("rowCount").textContent = `${outData.length} rows processed`;
+    showStatus('Preview ready');
+  }
+
+  function readFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+          const sheet = wb.Sheets[wb.SheetNames[0]];
+          resolve(XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' }));
+        } catch (err) { reject(err); }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  $("file").addEventListener('change', async () => {
+    const file = $("file").files[0];
+    const statusEl = document.getElementById('fileStatus');
+    if (!file) { statusEl.style.display = 'none'; return; }
+    try {
+      showStatus('Reading file…');
+      workbookData = await readFile(file);
+      headers = (workbookData[0] || []).map(h => String(h).trim());
+      $("processBtn").disabled = false;
+      const { fnIdx, lnIdx, skuIdx, odIdx, soidIdx, qtyIdx } = detectColumns(headers);
+      const chips = [];
+      if (odIdx !== -1) chips.push(`<span class=\"chip\">Order Date → DD/MM/YYYY</span>`);
+      if (soidIdx !== -1) chips.push(`<span class=\"chip\">Site Order ID detected</span>`);
+      chips.push(`<span class=\"chip\">Bundle SKU + SKU</span>`);
+      if (qtyIdx !== -1) chips.push(`<span class=\"chip\">Quantity</span>`);
+      chips.push(`<span class=\"chip\">Full Name</span>`);
+      $("detectedChips").innerHTML = chips.join('');
+
+      statusEl.textContent = `Uploaded: ${file.name} — ${workbookData.length-1} rows`;
+      statusEl.style.display = 'block';
+      showStatus('File loaded');
+    } catch (err) { showStatus('Error reading file'); alert('Error reading file'); statusEl.style.display='none'; }
+  });
+
+  $("processBtn").addEventListener('click', buildOutput);
+  $("downloadCsvBtn").addEventListener('click', () => {
+    const ws = XLSX.utils.json_to_sheet(outData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Output');
+    const poNumber = $("poNumber").value || 'output';
+    XLSX.writeFile(wb, `${poNumber}.csv`, { bookType: 'csv' });
+  });
+  $("downloadXlsxBtn").addEventListener('click', () => {
+    const ws = XLSX.utils.json_to_sheet(outData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Output');
+    const poNumber = $("poNumber").value || 'output';
+    XLSX.writeFile(wb, `${poNumber}.xlsx`);
+  });
+})();
+</script>
+</body>
+</html>

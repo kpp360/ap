@@ -187,36 +187,38 @@
   <script>
   // ───────────────────────────────────────────────────────────────────────────
   // BOX DATA (static)
-  const boxes = [
-    { name: 'B1',  length: 10, width: 8,  height: 6 },
-    { name: 'B2',  length: 12, width: 6,  height: 6 },
-    { name: 'B3',  length: 12, width: 12, height: 8 },
-    { name: 'B4',  length: 14, width: 10, height: 8 },
-    { name: 'B5',  length: 16, width: 10, height: 6 },
-    { name: 'B6',  length: 16, width: 12, height: 8 },
-    { name: 'B7',  length: 16, width: 12, height: 12 },
-    { name: 'B8',  length: 16, width: 16, height: 8 },
-    { name: 'B9',  length: 18, width: 6,  height: 6 },
-    { name: 'B10', length: 18, width: 14, height: 10 },
-    { name: 'B11', length: 18, width: 16, height: 12 },
-    { name: 'B12', length: 20, width: 8,  height: 8 },
-    { name: 'B13', length: 20, width: 10, height: 10 },
-    { name: 'B14', length: 20, width: 14, height: 8 },
-    { name: 'B15', length: 20, width: 16, height: 14 },
-    { name: 'B16', length: 20, width: 20, height: 12 },
-    { name: 'B17', length: 22, width: 14, height: 12 },
-    { name: 'B18', length: 24, width: 6,  height: 6 },
-    { name: 'B19', length: 24, width: 12, height: 12 },
-    { name: 'B20', length: 24, width: 24, height: 24 },
-    { name: 'B21', length: 26, width: 12, height: 12 },
-    { name: 'B22', length: 30, width: 6,  height: 6 },
-    { name: 'B23', length: 30, width: 14, height: 14 },
-    { name: 'B24', length: 40, width: 6,  height: 6 },
-    { name: 'A1',  length: 13.5, width: 8.5,  height: 2 },
-    { name: 'A2',  length: 13.5, width: 9.5,  height: 3 },
-    { name: 'A3',  length: 15,   width: 10.5, height: 3.5 },
-    { name: 'A4',  length: 18,   width: 12.5, height: 4 },
-    { name: 'A5',  length: 19,   width: 14.25, height: 4.5 }
+ // Replace ONLY the boxes array with this updated list:
+const boxes = [
+  { name: 'A01', length: 13.5, width: 8.5,  height: 2 },
+  { name: 'A02', length: 13.5, width: 9.5,  height: 3 },
+  { name: 'A03', length: 15,   width: 10.5, height: 3.5 },
+  { name: 'A04', length: 18,   width: 12.5, height: 4 },
+  { name: 'A05', length: 19,   width: 14.25, height: 4.5 },
+
+  { name: 'B01', length: 10, width: 8,  height: 6 },
+  { name: 'B02', length: 12, width: 6,  height: 6 },
+  { name: 'B03', length: 12, width: 12, height: 8 },
+  { name: 'B04', length: 14, width: 10, height: 8 },
+  { name: 'B05', length: 16, width: 10, height: 6 },
+  { name: 'B06', length: 16, width: 12, height: 8 },
+  { name: 'B07', length: 16, width: 12, height: 12 },
+  { name: 'B08', length: 16, width: 16, height: 8 },
+  { name: 'B09', length: 18, width: 6,  height: 6 },
+  { name: 'B10', length: 18, width: 14, height: 10 },
+  { name: 'B11', length: 18, width: 16, height: 12 },
+  { name: 'B12', length: 20, width: 8,  height: 8 },
+  { name: 'B13', length: 20, width: 10, height: 10 },
+  { name: 'B14', length: 20, width: 14, height: 8 },
+  { name: 'B15', length: 20, width: 16, height: 14 },
+  { name: 'B16', length: 20, width: 20, height: 12 },
+  { name: 'B17', length: 22, width: 14, height: 12 },
+  { name: 'B18', length: 24, width: 6,  height: 6 },
+  { name: 'B19', length: 24, width: 12, height: 12 },
+  { name: 'B20', length: 24, width: 24, height: 24 },
+  { name: 'B21', length: 26, width: 12, height: 12 },
+  { name: 'B22', length: 30, width: 6,  height: 6 },
+  { name: 'B23', length: 30, width: 14, height: 14 },
+  { name: 'B24', length: 40, width: 6,  height: 6 }
   ];
   const MAILERS = boxes.filter(b => b.name.startsWith('A'));
   const STD_BOXES = boxes.filter(b => b.name.startsWith('B'));
